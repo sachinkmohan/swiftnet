@@ -1,0 +1,6 @@
+#Ignore log files
+**/log/
+
+#Ignore the numpy weight files
+*.npz
+

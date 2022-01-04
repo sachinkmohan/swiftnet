@@ -8,13 +8,16 @@ import swiftnet
 import random
 import csv
 import math
+from keras.callbacks import ModelCheckpoint
+
 from scipy import misc
 
 #==============INPUT ARGUMENTS==================
 flags = tf.app.flags
 
 #Directory arguments
-flags.DEFINE_string('dataset_dir', './dataset', 'The dataset directory to find the train, validation and test images.')
+flags.DEFINE_string('dataset_dir', '/home/mohan/Documents/Thesis/cs_zero_bg', 'The dataset directory to find the train, validation and test images.')
+#flags.DEFINE_string('dataset_dir', '/home/mohan/Documents/Thesis/Cityscape dataset/leftImg8bit/', 'The dataset directory to find the train, validation and test images.')
 flags.DEFINE_string('logdir', './log/swiftnet', 'The log directory to save your checkpoint and event files.')
 #Training arguments
 flags.DEFINE_integer('num_classes', 19, 'The number of classes to predict.')
@@ -22,8 +25,8 @@ flags.DEFINE_integer('batch_size', 11, 'The batch_size for training.')
 flags.DEFINE_integer('eval_batch_size', 8, 'The batch size used for validation.')
 flags.DEFINE_integer('image_height',768, "The input height of the images.")
 flags.DEFINE_integer('image_width', 768, "The input width of the images.")
-flags.DEFINE_integer('num_epochs', 200, "The number of epochs to train your model.")
-flags.DEFINE_integer('num_epochs_before_decay', 200, 'The number of epochs before decaying your learning rate.')
+flags.DEFINE_integer('num_epochs', 1, "The number of epochs to train your model.") #changed the epoch from 200 to 1
+flags.DEFINE_integer('num_epochs_before_decay', 1, 'The number of epochs before decaying your learning rate.') #changed the epoch from 200 to 2
 flags.DEFINE_float('weight_decay', 1e-4, "The weight decay for ENet convolution layers.")
 flags.DEFINE_float('learning_rate_decay_factor', 0.6667, 'The learning rate decay factor.')
 flags.DEFINE_float('initial_learning_rate', 4e-4, 'The initial learning rate for your training.')
@@ -57,11 +60,20 @@ logdir = FLAGS.logdir
 
 #===============PREPARATION FOR TRAINING==================
 #Get the images into a list
+p_path=(os.path.join(dataset_dir,'train'))
+print('p_path', p_path)
+#print(os.listdir(dataset_dir + "/train"))
+#print("path", [os.path.join(dataset_dir, file) for file in os.listdir(dataset_dir + "/train/") if file.endswith('.png')])
 image_files = sorted([os.path.join(dataset_dir, 'train', file) for file in os.listdir(dataset_dir + "/train") if file.endswith('.png')])
+#image_files = sorted([os.path.join(dataset_dir, 'train', file) for file in os.listdir(dataset_dir + "/train") if file.endswith('.png')])
 annotation_files = sorted([os.path.join(dataset_dir, "trainannot", file) for file in os.listdir(dataset_dir + "/trainannot") if file.endswith('.png')])
 image_val_files = sorted([os.path.join(dataset_dir, 'val', file) for file in os.listdir(dataset_dir + "/val") if file.endswith('.png')])
 annotation_val_files = sorted([os.path.join(dataset_dir, "valannot", file) for file in os.listdir(dataset_dir + "/valannot") if file.endswith('.png')])
-#保存到excel
+print("Hello Training")
+#print(image_files)
+#print(annotation_files)
+
+#excel
 csvname=logdir[6:]+'.csv'
 with  open(csvname,'a', newline='') as out:
     csv_write = csv.writer(out,dialect='excel')
@@ -85,7 +97,7 @@ def weighted_cross_entropy(onehot_labels, logits, class_weights,annotations_ohe)
     return a/MASK
 
 
-#第一次增强采用最大1，然后亮度0.1
+#0.1
 def decode(a,b):
     a = tf.read_file(a)
     a=tf.image.decode_png(a, channels=3)
@@ -290,7 +302,9 @@ def run():
             step = 0;
             if Start_train is not True:
                 #input the checkpoint address,and the step number.
-                checkpoint='./log/swiftnet/model.ckpt-37127'
+                #checkpoint='./log/swiftnet/model.ckpt-37127'
+                checkpoint = ModelCheckpoint("ss_rrlab.h5", monitor='val_loss', verbose=1, mode='min', save_weights_only=False, period=1)
+
                 saver.restore(sess, checkpoint)
                 step = 37127
                 sess.run(tf.assign(global_step,step))
